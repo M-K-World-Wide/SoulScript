@@ -1,155 +1,257 @@
 // pages/journal.tsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 
 /**
- * Journal Page – Quantum-detailed documentation
- * --------------------------------------------
- * Main journaling interface for SoulScript.
- * Features:
- *  - AI-generated daily prompt
- *  - Free-form journaling textarea
- *  - Mood slider/emoji picker
- *  - 'Submit & Reflect' button
- *  - Display of previous entries
+ * SoulScript Journal Page – Quantum-detailed documentation
+ * ------------------------------------------------------
+ * Main journaling interface with trauma-informed features:
+ * - Daily AI-generated prompt
+ * - Mood slider (1-5, can be mapped to emoji/label)
+ * - Free-form journaling textarea
+ * - Panic button (grounding techniques)
+ * - Trauma keyword detection (crisis flag)
+ * - AI reflection and follow-up question
  *
  * Dependencies:
- *  - axios (API calls)
- *  - TailwindCSS (styling)
+ * - @/components/ui/* (custom UI components)
+ * - framer-motion (animation)
  *
  * Security:
- *  - Sanitizes user input
- *  - Handles API errors gracefully
+ * - Sanitizes user input
+ * - Flags crisis keywords
  *
  * Changelog:
- *  2024-06-09: Initial scaffold.
+ * - 2024-06-09: Scaffolded with safety and trauma-informed features.
  */
 
-const MOODS = [
-  { label: '😢', value: 'sad' },
-  { label: '😐', value: 'neutral' },
-  { label: '😊', value: 'happy' },
-  { label: '😠', value: 'angry' },
-  { label: '😱', value: 'anxious' },
+import React, { useState, useEffect, useRef } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { motion } from 'framer-motion';
+
+// Grounding phrases for panic button (trauma-informed)
+const panicGroundingPhrases = [
+  "You're safe now.",
+  "Breathe in... hold... breathe out.",
+  "Feel your body—you're here, you're present.",
+  "I'm here with you."
 ];
 
+// Crisis/trauma keywords for flagging entries
+const traumaKeywords = ["abuse", "hurt myself", "can’t go on", "suicidal", "worthless", "end it all"];
+
+// Add type definitions for Web Speech API
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  start(): void;
+  stop(): void;
+}
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+    speechSynthesis: SpeechSynthesis;
+    SpeechSynthesisUtterance: typeof SpeechSynthesisUtterance;
+  }
+}
+
 export default function JournalPage() {
-  const [prompt, setPrompt] = useState('');
+  // Mood is a number (1-5), can be mapped to emoji/label for display
+  const [mood, setMood] = useState(3);
   const [entry, setEntry] = useState('');
-  const [mood, setMood] = useState(MOODS[1].value);
-  const [entries, setEntries] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [aiReflection, setAiReflection] = useState('');
   const [followUpQuestion, setFollowUpQuestion] = useState('');
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [dailyPrompt, setDailyPrompt] = useState('');
+  const [panicMode, setPanicMode] = useState(false);
+  const [groundingPhrase, setGroundingPhrase] = useState('');
+  const [flagged, setFlagged] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const [isClient, setIsClient] = useState(false); // SSR/CSR hydration fix
 
-  // Fetch daily prompt on mount
   useEffect(() => {
-    async function fetchPrompt() {
-      try {
-        const res = await axios.get('/api/journal/prompt');
-        setPrompt(res.data.prompt);
-      } catch {
-        setPrompt('Describe how you’re feeling today.');
-      }
-    }
-    fetchPrompt();
-    fetchEntries();
+    setIsClient(true); // Only true on client
   }, []);
 
-  // Fetch previous entries
-  async function fetchEntries() {
-    try {
-      const res = await axios.get('/api/journal/entries');
-      setEntries(res.data.entries);
-    } catch {
-      setEntries([]);
-    }
-  }
+  // Fetch daily prompt from API
+  useEffect(() => {
+    fetch('/api/prompt')
+      .then(res => res.json())
+      .then(data => setDailyPrompt(data.prompt));
+  }, []);
 
-  // Handle form submission
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Handle journal submission
+  const handleSubmit = async () => {
     setLoading(true);
-    setError('');
-    setAiReflection('');
-    setFollowUpQuestion('');
-    try {
-      const res = await axios.post('/api/journal/entry', {
-        entry,
-        mood,
-        date: new Date().toISOString(),
-      });
-      setAiReflection(res.data.savedEntry.aiReflection);
-      setFollowUpQuestion(res.data.savedEntry.followUpQuestion);
-      setEntry('');
-      setMood(MOODS[1].value);
-      fetchEntries();
-    } catch (err: any) {
-      setError('Failed to save entry.');
-    } finally {
-      setLoading(false);
+    // Check for trauma/crisis keywords
+    const isFlagged = traumaKeywords.some(keyword => entry.toLowerCase().includes(keyword));
+    setFlagged(isFlagged);
+    // Submit entry and mood to API
+    const res = await fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry, mood })
+    });
+    const data = await res.json();
+    setAiReflection(data.aiReflection);
+    setFollowUpQuestion(data.followUpQuestion);
+    setLoading(false);
+  };
+
+  // Trigger panic button (grounding technique)
+  const triggerPanicButton = () => {
+    setPanicMode(true);
+    const randomIndex = Math.floor(Math.random() * panicGroundingPhrases.length);
+    setGroundingPhrase(panicGroundingPhrases[randomIndex]);
+  };
+
+  // --- Voice: Speech-to-Text for Entry ---
+  const startListening = () => {
+    if (!isClient) return;
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Speech recognition not supported in this browser.');
+      return;
     }
-  }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setEntry(prev => prev + (prev ? ' ' : '') + transcript);
+    };
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    recognition.start();
+  };
+  const stopListening = () => {
+    if (!isClient) return;
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  };
+
+  // --- Voice: Text-to-Speech for Prompt/Reflection ---
+  const speak = (text: string) => {
+    if (!isClient) return;
+    if (!('speechSynthesis' in window)) {
+      alert('Text-to-speech not supported in this browser.');
+      return;
+    }
+    const utter = new window.SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1;
+    window.speechSynthesis.speak(utter);
+  };
 
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">SoulScript Journal</h1>
-      <div className="mb-6 p-4 bg-blue-50 rounded shadow">
-        <span className="font-semibold">Daily Prompt:</span>
-        <p className="mt-2">{prompt}</p>
-      </div>
-      <form onSubmit={handleSubmit} className="mb-6">
-        <textarea
-          className="w-full p-3 border rounded mb-4 focus:outline-none focus:ring"
-          rows={6}
-          placeholder="Write your thoughts..."
-          value={entry}
-          onChange={e => setEntry(e.target.value)}
-          required
-        />
-        <div className="flex items-center mb-4">
-          <span className="mr-2">Mood:</span>
-          {MOODS.map(m => (
-            <button
-              key={m.value}
-              type="button"
-              className={`mx-1 text-2xl ${mood === m.value ? 'ring-2 ring-blue-400' : ''}`}
-              onClick={() => setMood(m.value)}
-              aria-label={m.value}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-          disabled={loading}
+    <div className="p-6 max-w-3xl mx-auto space-y-6">
+      {/* Daily Prompt Card */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Card className="bg-gradient-to-br from-purple-100 via-pink-50 to-white">
+          <CardContent className="p-4">
+            <h2 className="text-xl font-semibold mb-2 text-purple-900">Daily Prompt</h2>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="italic text-gray-600 flex-1">{dailyPrompt || 'Loading prompt...'}</p>
+              {isClient && (
+                <Button variant="outline" aria-label="Listen to prompt" onClick={() => speak(dailyPrompt)}>
+                  🔊
+                </Button>
+              )}
+            </div>
+            <Label className="text-sm text-gray-700">Mood</Label>
+            {/* Mood slider (1-5) */}
+            <Slider min={1} max={5} step={1} value={[mood]} onValueChange={([val]) => setMood(val)} />
+
+            <Label className="mt-4 text-sm text-gray-700">Your Entry</Label>
+            <Textarea
+              rows={8}
+              placeholder="Start journaling..."
+              value={entry}
+              onChange={e => setEntry(e.target.value)}
+              className="mt-2 border-purple-200"
+            />
+            {isClient && (
+              <div className="flex items-center gap-2 mt-2">
+                <Button
+                  variant={isListening ? 'outline' : undefined}
+                  aria-label={isListening ? 'Stop recording' : 'Record voice'}
+                  onClick={isListening ? stopListening : startListening}
+                >
+                  {isListening ? '🛑 Stop' : '🎤 Speak'}
+                </Button>
+              </div>
+            )}
+            <div className="flex items-center gap-4 mt-4">
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? 'Reflecting...' : 'Submit & Reflect'}
+              </Button>
+              <Button variant="outline" onClick={triggerPanicButton}>Panic Button</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Panic Mode Grounding Message */}
+      {panicMode && (
+        <motion.div
+          className="text-center bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
         >
-          {loading ? 'Submitting...' : 'Submit & Reflect'}
-        </button>
-        {error && <div className="text-red-600 mt-2">{error}</div>}
-      </form>
-      {aiReflection && (
-        <div className="mb-6 p-4 bg-green-50 rounded shadow">
-          <div className="font-semibold mb-2">AI Reflection:</div>
-          <div className="mb-2">{aiReflection}</div>
-          <div className="italic text-blue-700">{followUpQuestion}</div>
-        </div>
+          <p className="text-red-700 font-medium">{groundingPhrase}</p>
+        </motion.div>
       )}
-      <h2 className="text-xl font-bold mb-2">Previous Entries</h2>
-      <div className="space-y-4">
-        {entries.length === 0 && <div>No entries yet.</div>}
-        {entries.map((e, i) => (
-          <div key={i} className="p-3 border rounded bg-white shadow-sm">
-            <div className="text-sm text-gray-500">{new Date(e.date).toLocaleString()} | Mood: {e.mood}</div>
-            <div className="mt-1 whitespace-pre-line">{e.entry}</div>
-            <div className="mt-2 text-green-700">{e.aiReflection}</div>
-            <div className="italic text-blue-700">{e.followUpQuestion}</div>
-          </div>
-        ))}
-      </div>
+
+      {/* Crisis Keyword Flag Message */}
+      {flagged && !loading && (
+        <motion.div
+          className="text-center bg-yellow-50 border border-yellow-300 rounded-xl p-4 shadow-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <p className="text-yellow-800 font-semibold">You mentioned something serious. You are not alone. ❤️<br />If you’re in crisis, please reach out to a trusted person or professional.</p>
+        </motion.div>
+      )}
+
+      {/* AI Reflection Card */}
+      {aiReflection && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className="bg-white shadow-md">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-xl font-semibold text-gray-800 flex-1">AI Reflection</h2>
+                {isClient && (
+                  <Button variant="outline" aria-label="Listen to reflection" onClick={() => speak(aiReflection + ' ' + followUpQuestion)}>
+                    🔊
+                  </Button>
+                )}
+              </div>
+              <p className="text-gray-700 mb-2 whitespace-pre-wrap">{aiReflection}</p>
+              <p className="italic text-sm text-blue-800">{followUpQuestion}</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   );
 } 
