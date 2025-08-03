@@ -27,50 +27,39 @@ import axios from 'axios';
 const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 const MISTRAL_BASE_URL = 'https://api.mistral.ai/v1/chat/completions';
 
-export async function generatePrompt(): Promise<string> {
+// Lightweight wrapper to reduce duplication when calling Mistral
+async function postMistral(messages: { role: string; content: string }[]): Promise<string> {
   if (!MISTRAL_API_KEY) {
     throw new Error('MISTRAL_API_KEY is not set in environment variables');
   }
-  const response = await axios.post(
-    MISTRAL_BASE_URL,
-    {
-      model: 'mistral-small',
-      messages: [
-        { role: 'system', content: 'You are a gentle, trauma-informed therapist creating daily journaling prompts.' },
-        { role: 'user', content: 'Give me one journaling prompt for emotional healing and self-awareness.' }
-      ]
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${MISTRAL_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    }
-  );
-  return response.data.choices[0].message.content ?? 'Describe how you’re feeling today.';
+  try {
+    const response = await axios.post(
+      MISTRAL_BASE_URL,
+      { model: 'mistral-small', messages },
+      { headers: { Authorization: `Bearer ${MISTRAL_API_KEY}`, 'Content-Type': 'application/json' } }
+    );
+    return response.data.choices[0].message.content ?? '';
+  } catch (error) {
+    // Bubble a sanitized error to the caller; avoid leaking details
+    throw new Error('Mistral request failed');
+  }
+}
+
+export async function generatePrompt(): Promise<string> {
+  const content = await postMistral([
+    { role: 'system', content: 'You are a gentle, trauma-informed therapist creating daily journaling prompts.' },
+    { role: 'user', content: 'Give me one journaling prompt for emotional healing and self-awareness.' }
+  ]);
+  return content || 'Describe how you’re feeling today.';
 }
 
 export async function reflectOnEntry(entry: string): Promise<{ aiReflection: string; followUpQuestion: string }> {
-  if (!MISTRAL_API_KEY) {
-    throw new Error('MISTRAL_API_KEY is not set in environment variables');
-  }
-  const response = await axios.post(
-    MISTRAL_BASE_URL,
-    {
-      model: 'mistral-small',
-      messages: [
-        { role: 'system', content: 'You are a compassionate, trauma-informed therapeutic AI giving thoughtful reflections.' },
-        { role: 'user', content: `Here is my journal entry: "${entry}". Please reflect on it and offer one follow-up question.` }
-      ]
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${MISTRAL_API_KEY}`,
-        'Content-Type': 'application/json'
-      }
-    }
-  );
-  const content = response.data.choices[0].message.content ?? '';
+  // Basic sanitation: collapse newlines and trim to prevent prompt injection and bloat
+  const safeEntry = entry.replace(/\n/g, ' ').slice(0, 5000);
+  const content = await postMistral([
+    { role: 'system', content: 'You are a compassionate, trauma-informed therapeutic AI giving thoughtful reflections.' },
+    { role: 'user', content: `Here is my journal entry: "${safeEntry}". Please reflect on it and offer one follow-up question.` }
+  ]);
   const [aiReflection, followUpQuestion] = content.split('\n').reduce(
     (acc: string[], line: string) => {
       if (line.toLowerCase().includes('question')) acc[1] += line;

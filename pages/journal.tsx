@@ -43,23 +43,21 @@ const panicGroundingPhrases = [
 const traumaKeywords = ["abuse", "hurt myself", "can’t go on", "suicidal", "worthless", "end it all"];
 
 // Add type definitions for Web Speech API
-interface SpeechRecognition extends EventTarget {
+interface ISpeechRecognition extends EventTarget {
   lang: string;
   interimResults: boolean;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onresult: ((event: ISpeechRecognitionEvent) => void) | null;
   onend: (() => void) | null;
   start(): void;
   stop(): void;
 }
-interface SpeechRecognitionEvent extends Event {
+interface ISpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
 }
 declare global {
   interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-    speechSynthesis: SpeechSynthesis;
-    SpeechSynthesisUtterance: typeof SpeechSynthesisUtterance;
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
   }
 }
 
@@ -75,7 +73,7 @@ export default function JournalPage() {
   const [groundingPhrase, setGroundingPhrase] = useState('');
   const [flagged, setFlagged] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const [isClient, setIsClient] = useState(false); // SSR/CSR hydration fix
 
   useEffect(() => {
@@ -125,7 +123,7 @@ export default function JournalPage() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
     recognition.interimResults = false;
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: ISpeechRecognitionEvent) => {
       const transcript = event.results[0][0].transcript;
       setEntry(prev => prev + (prev ? ' ' : '') + transcript);
     };

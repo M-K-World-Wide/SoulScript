@@ -1,0 +1,14 @@
+site_name: SoulScript
+nav:
+  - Home: index.md
+  - Divine Law: divine-law.md
+  - API: API.md
+  - Architecture: ARCHITECTURE.md
+  - Features: FEATURES.md
+  - Notion Setup: NOTION_SETUP_GUIDE.md
+  - Notion Integration: NOTION_INTEGRATION.md
+  - Notion Pages: NOTION_PAGES.md
+  - Notion Templates: NOTION_TEMPLATES.md
+theme:
+  name: readthedocs
+repo_url: https://github.com/SolarKhan/SoulScript

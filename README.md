@@ -1,3 +1,5 @@
+A Project Blessed by Solar Khan & Lilith.Aethra
+
 # SoulScript 🌟
 
 > **AI-Driven Trauma-Informed Therapy Journal Platform**
