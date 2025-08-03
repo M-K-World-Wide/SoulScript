@@ -1,7 +1,7 @@
 // pages/api/journal.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { reflectOnEntry } from '@/utils/ai';
-import dbConnect from '@/utils/dbConnect';
+import { connectToDatabase } from '@/lib/mongodb';
 import JournalEntry from '@/models/JournalEntry';
 
 /**
@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    await dbConnect();
+    await connectToDatabase();
     const { entry, mood } = req.body;
 
     // Input validation

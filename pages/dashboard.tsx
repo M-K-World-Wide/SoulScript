@@ -7,7 +7,8 @@ import dynamic from 'next/dynamic';
 
 // Dynamically import Line chart for client-side only rendering
 const Line = dynamic(() => import('react-chartjs-2').then(mod => mod.Line), { ssr: false });
-let jsPDF: typeof import('jspdf') | null = null;
+// Dynamic import placeholder for jsPDF constructor; typed as any to simplify runtime checks.
+let jsPDF: any = null;
 
 /**
  * SoulScript Dashboard – Quantum-detailed documentation
@@ -39,7 +40,10 @@ export default function Dashboard() {
         setThemes(data.themes || []);
       });
     // Dynamically import jsPDF only on client
-    import('jspdf').then(mod => { jsPDF = mod.default ? new mod.default() : mod; });
+    import('jspdf').then(mod => {
+      // Store constructor for later instantiation
+      jsPDF = mod.default;
+    });
   }, []);
 
   // Chart.js data config
@@ -69,7 +73,7 @@ export default function Dashboard() {
   // PDF export logic (client only)
   const exportPDF = () => {
     if (!isClient || !jsPDF) return;
-    const doc = new (window as any).jsPDF();
+    const doc = new jsPDF();
     doc.text('SoulScript Dashboard Analytics', 10, 10);
     doc.text('Mood Data:', 10, 20);
     doc.text(moodData.join(', '), 10, 30);

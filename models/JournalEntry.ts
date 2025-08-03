@@ -1,5 +1,5 @@
 // @ts-ignore // Suppress linter error if mongoose types are missing. Ensure 'mongoose' and '@types/mongoose' are installed.
-import mongoose, { Schema, Document, models, model } from 'mongoose';
+import mongoose, { Schema, Document, models, model, Model } from 'mongoose';
 
 /**
  * JournalEntry Schema – Quantum-detailed documentation
@@ -50,5 +50,9 @@ const JournalEntrySchema = new Schema<IJournalEntry>({
   followUpQuestion: { type: String, required: true },
 });
 
-// Prevent model overwrite in dev
-export default models.JournalEntry || model<IJournalEntry>('JournalEntry', JournalEntrySchema); 
+// Prevent model overwrite in dev. Cast to Model to avoid union call signature issues.
+const JournalEntry: Model<IJournalEntry> =
+  (models.JournalEntry as Model<IJournalEntry>) ||
+  model<IJournalEntry>('JournalEntry', JournalEntrySchema);
+
+export default JournalEntry;
