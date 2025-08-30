@@ -4,13 +4,15 @@ A Project Blessed by Solar Khan & Lilith.Aethra
 
 > **AI-Driven Trauma-Informed Therapy Journal Platform**
 
-SoulScript is a revolutionary digital journaling platform that combines AI-powered insights with trauma-informed therapeutic practices to support emotional healing, self-awareness, and personal transformation.
-
 [![Next.js](https://img.shields.io/badge/Next.js-15.3.5-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue)](https://www.typescriptlang.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-8.16.2-green)](https://www.mongodb.com/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-purple)](https://tailwindcss.com/)
+[![Node.js](https://img.shields.io/badge/Node.js->=18.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+[![CI Status](https://github.com/MKWorldWide/SoulScript/actions/workflows/ci.yml/badge.svg)](https://github.com/MKWorldWide/SoulScript/actions)
+[![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-Live-success)](https://mkworldwide.github.io/SoulScript/)
+
+SoulScript is a revolutionary digital journaling platform that combines AI-powered insights with trauma-informed therapeutic practices to support emotional healing, self-awareness, and personal transformation.
 
 ## 🎯 Mission
 
@@ -42,6 +44,84 @@ SoulScript empowers individuals on their healing journey by providing a safe, in
 - **Dark/Light Mode**: Comfortable viewing options
 - **Smooth Animations**: Framer Motion powered interactions
 - **Intuitive Interface**: Clean, calming design
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 18.0.0 or higher
+- npm 9.0.0 or higher
+- MongoDB (local or cloud instance)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/MKWorldWide/SoulScript.git
+   cd SoulScript
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🛠️ Development
+
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm start` - Start production server
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
+- `npm run type-check` - Check TypeScript types
+
+### Code Style
+
+We use:
+- [ESLint](https://eslint.org/) for code quality
+- [Prettier](https://prettier.io/) for code formatting
+- [TypeScript](https://www.typescriptlang.org/) for type safety
+
+Before committing, please run:
+```bash
+npm run lint
+npm run format
+```
+
+## 🤝 Contributing
+
+We welcome contributions! Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [Next.js](https://nextjs.org/) - The React Framework for Production
+- [MongoDB](https://www.mongodb.com/) - The database for modern applications
+- [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
+- [Framer Motion](https://www.framer.com/motion/) - Production-ready animation library for React
 
 ## 🏗️ Architecture
 

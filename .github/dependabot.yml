@@ -1,0 +1,37 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    # Look for `package.json` and `lock` files in the `root` directory
+    directory: "/"
+    # Check for updates once a week
+    schedule:
+      interval: "weekly"
+      # Check for updates on Monday at 9am UTC
+      time: "09:00"
+      # Use UTC timezone
+      timezone: "UTC"
+    # Create a pull request for updates that include version updates for production dependencies
+    versioning-strategy: increase
+    # Commit message preferences
+    commit-message:
+      # Prefix all commit messages with "chore(deps)"
+      prefix: "chore"
+      # Include the dependency name and version range in the commit message
+      include: "scope"
+    # Labels to apply to pull requests
+    labels:
+      - "dependencies"
+      - "automated"
+    # Auto-merge minor and patch updates for devDependencies
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
+        dependency-type: "development"
+    # Only allow updates that pass all status checks
+    reviewers:
+      - "MKWorldWide/team"
+    assignees:
+      - "MKWorldWide/team"
+    # Only update existing PRs, don't create new ones (Renovate will handle that)
+    open-pull-requests-limit: 0
